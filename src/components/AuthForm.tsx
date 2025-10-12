@@ -50,9 +50,16 @@ const AuthForm = () => {
         });
       }
     } catch (error: any) {
+      let errorMessage = error.message;
+      
+      // Provide more helpful error messages
+      if (error.message === "Invalid login credentials") {
+        errorMessage = "Invalid email or password. If you just signed up, please check your email to confirm your account first.";
+      }
+      
       toast({
         title: "Authentication error",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
