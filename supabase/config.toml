@@ -1,1 +1,4 @@
 project_id = "nndzggplxnxvczknkdjw"
+
+[functions.detect-fake-news]
+verify_jwt = true
