@@ -92,6 +92,8 @@ serve(async (req) => {
 
     // Step 2: Save to Supabase database
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
       throw new Error('No authorization header');
     }
@@ -102,7 +104,13 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    console.log('User fetch result:', { user: !!user, error: userError });
+    
+    if (userError) {
+      console.error('User fetch error:', userError);
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
     
     if (!user) {
       throw new Error('User not authenticated');
