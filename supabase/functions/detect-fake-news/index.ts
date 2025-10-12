@@ -31,7 +31,7 @@ serve(async (req) => {
     
     console.log('Classifying news with Hugging Face...');
     const classificationResponse = await fetch(
-      'https://api-inference.huggingface.co/models/afsanehm/fake-news-detection-llm',
+      'https://api-inference.huggingface.co/models/hamzab/roberta-fake-news-classification',
       {
         method: 'POST',
         headers: {
@@ -40,9 +40,6 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           inputs: newsText,
-          parameters: {
-            truncation: true,
-          }
         }),
       }
     );
