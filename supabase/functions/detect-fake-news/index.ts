@@ -92,27 +92,24 @@ serve(async (req) => {
 
     // Step 2: Save to Supabase database
     const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
     
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
+    // Extract JWT from Bearer token
+    const jwt = authHeader.replace('Bearer ', '');
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    console.log('User fetch result:', { user: !!user, error: userError });
+    // Verify and get user from JWT
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(jwt);
     
-    if (userError) {
-      console.error('User fetch error:', userError);
-      throw new Error(`Authentication error: ${userError.message}`);
-    }
-    
-    if (!user) {
+    if (userError || !user) {
+      console.error('Authentication error:', userError);
       throw new Error('User not authenticated');
     }
 
