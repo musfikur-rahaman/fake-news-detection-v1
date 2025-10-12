@@ -23,7 +23,11 @@ serve(async (req) => {
     }
 
     // Step 1: Classify the news using Hugging Face model
-    const HF_API_TOKEN = Deno.env.get('HUGGING_FACE_API_TOKEN') || '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';
+    const HF_API_TOKEN = Deno.env.get('HUGGING_FACE_API_KEY');
+    
+    if (!HF_API_TOKEN) {
+      throw new Error('HUGGING_FACE_API_KEY not configured');
+    }
     
     console.log('Classifying news with Hugging Face...');
     const classificationResponse = await fetch(
