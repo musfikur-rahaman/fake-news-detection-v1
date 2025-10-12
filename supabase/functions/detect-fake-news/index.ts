@@ -22,99 +22,75 @@ serve(async (req) => {
       );
     }
 
-    // Step 1: Classify the news using Hugging Face model
-    const HF_API_TOKEN = Deno.env.get('HUGGING_FACE_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
-    if (!HF_API_TOKEN) {
-      throw new Error('HUGGING_FACE_API_KEY not configured');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
-    
-    console.log('Classifying news with Hugging Face...');
+
+    // Step 1: Classify the news using Lovable AI
+    console.log('Classifying news with Lovable AI...');
     const classificationResponse = await fetch(
-      'https://api-inference.huggingface.co/models/hamzab/roberta-fake-news-classification',
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${HF_API_TOKEN}`,
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          inputs: newsText,
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a fake news detection AI. Analyze the given news article and respond with ONLY a JSON object in this exact format: {"label": "FAKE" or "REAL", "score": 0.0-1.0, "explanation": "brief explanation"}. The score should indicate confidence (1.0 = very confident).'
+            },
+            {
+              role: 'user',
+              content: `Analyze this news article and determine if it's FAKE or REAL:\n\n${newsText}`
+            }
+          ],
         }),
       }
     );
 
     if (!classificationResponse.ok) {
       const errorText = await classificationResponse.text();
-      console.error('HF Classification error:', errorText);
-      throw new Error(`Hugging Face API error: ${errorText}`);
+      console.error('Lovable AI error:', errorText);
+      throw new Error(`AI classification error: ${errorText}`);
     }
 
     const classificationData = await classificationResponse.json();
     console.log('Classification result:', classificationData);
     
-    // Parse the classification result
+    const aiResponse = classificationData.choices[0]?.message?.content?.trim();
+    
+    // Parse the AI response
     let label = 'UNKNOWN';
-    let score = 0;
-    
-    if (Array.isArray(classificationData) && classificationData[0]) {
-      const topResult = classificationData[0][0];
-      label = topResult.label;
-      score = topResult.score;
-    }
-
-    // Map labels to FAKE/REAL
-    const labelMap: Record<string, string> = {
-      'FAKE': 'FAKE',
-      'REAL': 'REAL',
-      'LABEL_1': 'FAKE',
-      'LABEL_0': 'REAL'
-    };
-    
-    const mappedLabel = labelMap[label] || label;
-    
-    // Step 2: Generate explanation using Groq API if news is FAKE
+    let score = 0.5;
     let explanation = '';
     
-    if (mappedLabel === 'FAKE') {
-      const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
-      
-      if (!GROQ_API_KEY) {
-        throw new Error('GROQ_API_KEY not configured');
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        label = parsed.label?.toUpperCase() === 'FAKE' ? 'FAKE' : 'REAL';
+        score = parseFloat(parsed.score) || 0.5;
+        explanation = parsed.explanation || '';
       }
-
-      console.log('Generating explanation with Groq...');
-      const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            {
-              role: 'user',
-              content: `The following news article has been classified as FAKE. Explain in 2-3 sentences why this might be fake news:\n\n${newsText}\n\nExplanation:`,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 200,
-        }),
-      });
-
-      if (!groqResponse.ok) {
-        const errorText = await groqResponse.text();
-        console.error('Groq API error:', errorText);
-        explanation = 'Unable to generate explanation at this time.';
-      } else {
-        const groqData = await groqResponse.json();
-        explanation = groqData.choices[0]?.message?.content?.trim() || 'No explanation available.';
-        console.log('Generated explanation:', explanation);
+    } catch (e) {
+      console.error('Failed to parse AI response:', e);
+      // Fallback: check if response contains FAKE or REAL
+      if (aiResponse.toUpperCase().includes('FAKE')) {
+        label = 'FAKE';
+      } else if (aiResponse.toUpperCase().includes('REAL')) {
+        label = 'REAL';
       }
+      explanation = aiResponse;
     }
 
-    // Step 3: Save to Supabase database
+    // Step 2: Save to Supabase database
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
@@ -137,7 +113,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         news_text: newsText,
-        label: mappedLabel,
+        label: label,
         score: score,
         explanation: explanation || null,
       });
@@ -149,7 +125,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        label: mappedLabel,
+        label: label,
         score: score,
         explanation: explanation,
       }),
