@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 import os
-
+import streamlit as st
 load_dotenv()
 
-llm = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model_name="meta-llama/llama-4-scout-17b-16e-instruct")
+llm = ChatGroq(api_key=os.getenv("GROQ_API_KEY") or  st.secrets.get("GROQ_API_KEY"), model_name="meta-llama/llama-4-scout-17b-16e-instruct")
 
 def explain_fake_news(text):
     """
