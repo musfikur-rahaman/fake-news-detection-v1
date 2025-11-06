@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -69,7 +69,16 @@ const AuthForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-secondary">
-      <Card className="w-full max-w-md border-border/50 shadow-2xl bg-card/80 backdrop-blur-sm">
+      <div className="w-full max-w-md relative">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/")}
+          className="absolute -top-12 left-0 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Home
+        </Button>
+        <Card className="w-full border-border/50 shadow-2xl bg-card/80 backdrop-blur-sm">
         <CardHeader className="space-y-1">
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {isLogin ? "Welcome Back" : "Create Account"}
@@ -133,6 +142,7 @@ const AuthForm = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
