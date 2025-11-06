@@ -14,36 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      detections: {
-        Row: {
-          created_at: string | null
-          explanation: string | null
-          id: string
-          label: string
-          news_text: string
-          score: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          explanation?: string | null
-          id?: string
-          label: string
-          news_text: string
-          score: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          explanation?: string | null
-          id?: string
-          label?: string
-          news_text?: string
-          score?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
